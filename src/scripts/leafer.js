@@ -1,24 +1,23 @@
 import Engine from "./engine";
-import { fabric } from "fabric";
+import { Leafer, Rect } from 'leafer-ui';
 
-class FabricEngine extends Engine {
+class LeafercEngine extends Engine {
+
   constructor() {
     super();
     this.canvas = document.createElement("canvas");
     this.canvas.width = this.width;
     this.canvas.height = this.height;
     this.content.appendChild(this.canvas);
+    this.leafer = null;
   }
 
   init() {
-    fabric.Object.prototype.objectCaching = false;
-    fabric.Object.prototype.originX = "center";
-    fabric.Object.prototype.originY = "center";
-    this.fabricCanvas = new fabric.StaticCanvas(this.canvas, {
-      enableRetinaScaling: false,
-      renderOnAddRemove: false,
+    this.leafer = new Leafer({
+      view: this.canvas,
+      width: this.width,
+      height: this.height,
     });
-    window.canvas = this.fabricCanvas;
   }
 
   animate() {
@@ -26,22 +25,22 @@ class FabricEngine extends Engine {
     for (let i = 0; i < this.count.value; i++) {
       const r = rects[i];
       r.x -= r.speed;
-      r.el.left = r.x;
-      if (r.x + r.size < 0) {
-        r.x = this.width + r.size;
+      r.el.move(-r.speed, 0);
+      if (r.x + r.size * 2 < 0) {
+        r.x = this.width + r.size * 2;
+        r.el.move(r.x, 0)
       }
     }
-    this.fabricCanvas.renderAll();
     this.meter.tick();
-
     this.request = requestAnimationFrame(() => this.animate());
   }
 
+
   render() {
     // clear the canvas
-    this.fabricCanvas.clear();
+    // console.log(this.count, this.leafer)
+    this.leafer.canvas.clearRect(0, 0, this.width, this.height);
     this.cancelAnimationFrame(this.request);
-
     // rectangle creation
     const rects = new Array(this.count);
     for (let i = 0; i < this.count.value; i++) {
@@ -50,31 +49,24 @@ class FabricEngine extends Engine {
       const size = 10 + Math.random() * 40;
       const speed = 1 + Math.random();
 
-      const fRect = new fabric.Rect({
+      const rect = new Rect({
+        x,
+        y,
         width: size,
         height: size,
-        fill: "white",
+        fill: 'white',
         stroke: "black",
-        top: y,
-        left: x,
       });
-      rects[i] = { x, y, size: size / 2, speed, el: fRect };
+      rects[i] = { x, y, size: size / 2, speed, el: rect };
+      this.leafer.add(rect);
     }
     this.rects = rects;
-    this.fabricCanvas.add(...rects.map((rect) => rect.el));
-
     this.request = requestAnimationFrame(() => this.animate());
   }
 }
 
-// document.addEventListener("DOMContentLoaded", () => {
-//   const engine = new FabricEngine();
-//   engine.init();
-//   engine.render();
-// });
-
-window.onload = function() {
-    const engine = new FabricEngine();
-    engine.init();
-    engine.render();
-};
+window.onload = function () {
+  const engine = new LeafercEngine();
+  engine.init();
+  engine.render();
+}
